@@ -1,5 +1,7 @@
 import pygame,os,gui,level
 
+tile_rects = []
+
 def collision_test(rect,tiles):
     collisions = []
     for tile in tiles:

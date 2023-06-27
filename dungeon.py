@@ -1,7 +1,5 @@
-import pygame, os
-import entities as e
-import gui
-import level			
+import pygame, os, gui, level
+import entities as e			
 
 WIDTH = 1080#Useful constants
 HEIGHT = 720
