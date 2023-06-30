@@ -26,6 +26,7 @@ pygame.mixer.music.play(-1)
 player = e.Player(WIDTH/2,HEIGHT/5,39,60)#Instantiates player
 slime = e.Slime(WIDTH/3,HEIGHT/5,32,32)#Instantiates Slime
 player_gui = gui.Player_gui(64,64,25,657)#Instantiates player gui
+spear = e.Spear(player,26,5,1)#instantiates spear
 
 scroll = [0,0]
 
@@ -37,14 +38,15 @@ while running:
 	scroll[0] += (player.rect.x-scroll[0]-500)/10
 	scroll[1] += (player.rect.y-scroll[1]-300)/10
 	
-	level.drawMap(screen,scroll)
+	tile_rects = level.drawMap(screen,scroll)
 
-	player.do(screen,scroll,player_gui)	#updates and draws player
-	slime.do(screen,scroll) #updates and draws slime
+	player.do(screen,scroll,player_gui,tile_rects)	#updates and draws player
+	slime.do(screen,scroll,tile_rects,player) #updates and draws slime
 	player_gui.update(screen) #updates and draws hitpoints bar, player's hotbar, and inventory
 	
-	mouse_pos = pygame.mouse.get_pos()
 	
+	mouse_pos = pygame.mouse.get_pos()
+	#print(mouse_pos)
 	for event in pygame.event.get():
 	
 		if event.type == pygame.KEYDOWN:#toggles inventory view
@@ -78,7 +80,8 @@ while running:
 					for rects in player_gui.inv_rects:
 						if player_gui.inv_rects[rects].collidepoint(mouse_pos):
 							print(rects)#rects is the inventory cell name or key for the inv_rects dictionary
-							
+				spear.do(screen,scroll,player)
+				print(player.direction)			
 			if event.button == 3:#for future right click functionality
 				pass
 			

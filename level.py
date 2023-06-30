@@ -43,3 +43,4 @@ def drawMap(screen,scroll):
 				tile_rects.append(pygame.Rect(x * tile_size, y * tile_size, tile_size, tile_size))
 			x += 1
 		y += 1
+	return tile_rects

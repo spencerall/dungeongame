@@ -1,7 +1,5 @@
 import pygame,os,gui,level
 
-tile_rects = []
-
 def collision_test(rect,tiles):
     collisions = []
     for tile in tiles:
@@ -9,13 +7,27 @@ def collision_test(rect,tiles):
             collisions.append(tile)
     return collisions
 	
+def animation_loader(entity_name,animation_name,animation_frame_qty,scale):
+	animation_frames_right = []
+	animation_frames_left = []
+	
+	for i in range (0,animation_frame_qty):
+		img_right = pygame.image.load(os.path.join('entityanimations',entity_name,animation_name,animation_name+'_'+str(i)+'.png'))
+		animation_frames_right.append(img_right)
+	
+	for i in range (len(animation_frames_right)): #scales images properly
+		animation_frames_right[i] = pygame.transform.scale(animation_frames_right[i],scale)
+		
+	for image in animation_frames_right: #flips images 
+		flipped_image = pygame.transform.flip(image,True,False)
+		animation_frames_left.append(flipped_image)	
+		
+	return animation_frames_right,animation_frames_left
+	
 class Slime:
-
-	idle = [pygame.image.load(os.path.join('entityanimations','slime','idle','idle_0.png')),
-			pygame.image.load(os.path.join('entityanimations','slime','idle','idle_1.png'))]
+	idle,holder = animation_loader('slime','idle',2,(32,32))
 			
 	for i in range (len(idle)):
-		idle[i] = pygame.transform.scale(idle[i],(32,32))
 		idle[i].set_colorkey((255,255,255))
 		
 	def __init__(self,x,y,size_x,size_y):
@@ -33,18 +45,18 @@ class Slime:
 		self.dy = 0
 		self.dx = 0
 		
-	def update(self):
+	def update(self,tile_rects,player):
 		self.counter += 1 #counts to keep track of animation
 		self.timer += 1
 		if self.timer > 90: #makes slime only do its movements every tick and a half at most
 			
 			if self.jumping == False and self.falling == False: #if not jumping or falling, 
-				self.dy = -10#slime jumps
+				self.dy = -8#slime jumps
 
 				if (player.rect.x - self.rect.x) > 0:  #checks to see where the player is and has it move towards the player
-					self.dx = 5
+					self.dx = 4
 				else:
-					self.dx = -5				
+					self.dx = -4			
 				
 			self.timer = 0
 			self.falling = True
@@ -54,10 +66,9 @@ class Slime:
 		for tile in collisions: 
 			if self.dx > 0:
 				self.rect.right = tile.left
-				self.dx = 0
+
 			if self.dx < 0:
 				 self.rect.left = tile.right
-				 self.dx = 0
 		
 		self.rect.y += self.dy #collisions for movemnt on y axis
 		collisions = collision_test(self.rect,tile_rects)
@@ -83,25 +94,15 @@ class Slime:
 			self.counter = 0
 		screen.blit(self.idle[self.counter // 12],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
 		
-	def do(self,screen,scroll):
-		self.update()
+	def do(self,screen,scroll,tile_rects,player):
+		self.update(tile_rects,player)
 		self.draw(screen,scroll)
 
 class Player:
-	walk_right = [pygame.image.load(os.path.join('playeranimations','run','run_0.png')),
-				pygame.image.load(os.path.join('playeranimations','run','run_1.png')),
-				pygame.image.load(os.path.join('playeranimations','run','run_2.png')),
-				pygame.image.load(os.path.join('playeranimations','run','run_3.png')),
-				pygame.image.load(os.path.join('playeranimations','run','run_4.png')),
-				pygame.image.load(os.path.join('playeranimations','run','run_5.png'))]
-	walk_left = []
-	for i in range (len(walk_right)):
-		walk_right[i] = pygame.transform.scale(walk_right[i],(39,60))
-		
-	for image in walk_right:
-		flipped_image = pygame.transform.flip(image,True,False)
-		walk_left.append(flipped_image)
-		
+	idle_right,idle_left = animation_loader('player','idle',2,(39,60))
+	walk_right,walk_left = animation_loader('player','run',6,(39,60))
+	jump_right,jump_left = animation_loader('player','jump',5,(39,60))
+	
 	def __init__(self,x,y,size_x,size_y):
 		self.index = 0
 		self.x = x
@@ -112,17 +113,20 @@ class Player:
 		self.size_y = size_y
 		self.rect = pygame.Rect(self.x,self.y,self.size_x,self.size_y)
 		self.vely = 0 
-		self.counter = 0
+		self.animation_speed = 0.15
+		self.frame_index = 0
 		self.direction = 1
 		self.max_hitpoints = 10
 		self.hitpoints = 10
 		self.dmg_detect_timer = 0
 		self.regeneration_timer = 0
 		self.jumping = False
+		self.animation = self.idle_right
+		self.animation_frame_qty = len(self.animation)
+		self.frame_index = 0
 
-	def update(self,player_gui):
+	def update(self,player_gui,tile_rects):
 
-		walk_cooldown = 5
 		self.dmg_detect_timer += 1
 		self.regeneration_timer += 1
 		
@@ -130,18 +134,34 @@ class Player:
 		if k[pygame.K_SPACE] and not self.jumping:
 			self.dy = -12
 			self.jumping = True
+			self.animation_speed = 0.1
+			if self.direction == 1:
+				self.animation = self.jump_right
+			else:
+				self.animation = self.jump_left
 		if k[pygame.K_a]:
 			self.dx = -5
-			self.counter += 1
 			self.direction = -1
+			self.animation_speed = 0.15
+			if not self.jumping:
+				self.animation = self.walk_left
 		elif k[pygame.K_d]:
 			self.dx = 5
-			self.counter += 1
 			self.direction = 1
-		if k[pygame.K_a] == False and k[pygame.K_d] == False:
-			self.counter = 0
-			self.index = 0
+			self.animation_speed = 0.15
+			if not self.jumping:
+				self.animation = self.walk_right
+		if k[pygame.K_a] == False and k[pygame.K_d] == False and not self.jumping:
 			self.dx = 0
+			self.animation_speed = 0.07
+			if self.direction == 1:
+				self.animation = self.idle_right
+			else:
+				self.animation = self.idle_left 
+		
+		self.frame_index += self.animation_speed
+		if self.frame_index >= len(self.animation):
+			self.frame_index = 0			
 		
 		self.rect.x += self.dx #collisions for movement on x axis
 		collisions = collision_test(self.rect,tile_rects)
@@ -181,16 +201,89 @@ class Player:
 				# pygame.mixer.Sound.play(player_dmg_sound)
 				# player_gui.hitpoints[self.hitpoints+1] = False
 					
-	def draw(self,screen,scroll):
-		if self.counter + 1 >= 60:
-			self.counter = 0		
+	def draw(self,screen,scroll):	
+		screen.blit(self.animation[int(self.frame_index)],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
+
+	def do(self,screen,scroll,player_gui,tile_rects):
+		self.update(player_gui,tile_rects) 
+		self.draw(screen,scroll)
+
+class Spear:
+	stab_right = pygame.image.load(os.path.join('weaponimages','wooden_spear.png'))
+	stab_right = pygame.transform.scale(stab_right,(72,20))
+	stab_right.set_colorkey((255,255,255))
+	stab_left = pygame.transform.flip(stab_right,False,True)
+	
+	def __init__(self,player,size_x,size_y,direction):
+		self.x = player.x
+		self.y = player.y
+		self.dx = 0
+		self.dy = 0
+		self.size_x = size_x
+		self.size_y = size_y
+		self.rect = pygame.Rect(self.x,self.y,size_x,size_y)
+		self.type = 'wooden'
+		self.direction = direction
+		self.image = 0
+		self.player = player
+	def update(self,direction):
+		print(self.x,self.y)
 		if self.direction == -1:
-			screen.blit(self.walk_left[self.counter // 10],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
-			self.counter += 1
-		if self.direction == 1:
-			screen.blit(self.walk_right[self.counter // 10],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
-			self.counter += 1
+			self.image = self.stab_right
+		else:
+			self.image = self.stab_left
+	def draw(self,screen,scroll):
+		screen.blit(self.image,(self.rect.x-scroll[0],self.rect.y-scroll[1]))
 		
-	def do(self,screen,scroll,player_gui):
-		self.update(player_gui) 
-		self.draw(screen,scroll)		
+	def do(self,screen,scroll,direction):
+		self.update(direction)
+		self.draw(screen,scroll)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
