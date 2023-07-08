@@ -1,6 +1,59 @@
-import pygame, os
+import pygame, os, pygame_gui
+class Menu: #need to add a save functionality and button. save and quit for example
+	menu_images = {'singleplayer':pygame.image.load(os.path.join('ui','singleplayerbutton.png')),
+				'multiplayer':pygame.image.load(os.path.join('ui','multiplayerbutton.png')),
+				'settings':pygame.image.load(os.path.join('ui','settingsbutton.png')),
+				'quit':pygame.image.load(os.path.join('ui','quitbutton.png')),
+				'save':pygame.image.load(os.path.join('ui','savebutton.png')),
+				'mainmenu':pygame.image.load(os.path.join('ui','mainmenubutton.png'))}
+				
+	for key in menu_images:
+		menu_images[key] = pygame.transform.scale(menu_images[key],(600,100))
+		menu_images[key].set_colorkey((255,255,255))
+	 	
+	def __init__(self,x,y):
+		self.x = x
+		self.y = y			
+		self.main_menu_keys = ['singleplayer','multiplayer','settings','quit']
+		self.pause_menu_keys = ['mainmenu','settings','quit']
+		self.type = None
+		
+	def button_function(self):
+		button_rects = []
+		buttons_pressed = {'mainmenu':False,
+						'settings':False,
+						'quit':False,
+						'singleplayer':False,
+						'multiplayer':False}						
+		pos = pygame.mouse.get_pos()
+		
+		for key in self.pause_menu_keys:
+			rects = pygame.Surface.get_rect(self.menu_images[key])
+			button_rects.append(rects)
 
-class Player_gui:
+		if self.type == 'pause':
+			for rects in button_rects:
+				if rects.collidepoint(pos):
+					print(buttons_pressed[rects])
+						
+	def draw(self,screen,y):	
+		if self.type == 'main':
+			for key in self.main_menu_keys:		
+				screen.blit(self.menu_images[key],(self.x,self.y))
+				self.y += 150
+			self.y = y
+			
+		if self.type == 'pause':
+			for key in self.pause_menu_keys:		
+				screen.blit(self.menu_images[key],(self.x,self.y))
+				self.y += 150
+			self.y = y
+			
+	def do(self,screen,y):
+		self.button_function()
+		self.draw(screen,y)
+		
+class PlayerGui:
 	ui_images = [pygame.image.load(os.path.join('ui','emptyheart.png')),
 				pygame.image.load(os.path.join('ui','heart.png')),
 				pygame.image.load(os.path.join('ui','invborder.png')),
@@ -42,23 +95,15 @@ class Player_gui:
 		k = pygame.key.get_pressed()
 			
 		if k[pygame.K_1]:
-			self.hotbar[self.hotbar_index] = False
-			self.hotbar[1] = True
 			self.hotbar_index = 1
 		
-		if k[pygame.K_2]:
-			self.hotbar[self.hotbar_index] = False
-			self.hotbar[2] = True
+		elif k[pygame.K_2]:
 			self.hotbar_index = 2
 			
-		if k[pygame.K_3]:
-			self.hotbar[self.hotbar_index] = False
-			self.hotbar[3] = True
+		elif k[pygame.K_3]:
 			self.hotbar_index = 3
 			
-		if k[pygame.K_4]:
-			self.hotbar[self.hotbar_index] = False
-			self.hotbar[4] = True
+		elif k[pygame.K_4]:
 			self.hotbar_index = 4
 			
 		for i in range(10): 
@@ -70,7 +115,7 @@ class Player_gui:
 		self.health_x = 25 #keeps ui from moving on the screen
 		
 		for i in range(1,5): #Displays player's hotbar
-			if self.hotbar[i] == True:
+			if i == self.hotbar_index:
 				screen.blit(self.ui_images[3],(self.hotbar_x, self.hotbar_y))
 			else:
 				screen.blit(self.ui_images[2],(self.hotbar_x, self.hotbar_y))
