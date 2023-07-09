@@ -36,25 +36,25 @@ class Slime:
 		
 	def __init__(self,x,y,size_x,size_y):
 		self.index = 0
-		self.x = x
-		self.y = y
-		self.size_x = size_x
-		self.size_y = size_y
 		self.jumping = False
 		self.falling = True
-		self.rect = pygame.Rect(self.x,self.y,self.size_x,self.size_y)
-		self.vely = 0 
+		self.rect = pygame.Rect(x,y,size_x,size_y)
+		self.vely = 0
 		self.counter = 0
 		self.timer = 0
 		self.dy = 0
 		self.dx = 0
 		self.hitpoints = 10
+		self.animation = self.idle
+		self.animation_frame_qty = len(self.animation)
+		self.animation_speed = 0.08
+		self.frame_index = 0
+		self.counter = 0
+	def update(self,tile_rects,player):		
 		
-	def update(self,tile_rects,player):
-		self.counter += 1 #counts to keep track of animation
-		self.timer += 1
-		#print(self.rect)
-		if self.timer > 90: #makes slime only do its movements every tick and a half at most
+		self.counter += 1
+		if self.counter > 80:
+			self.counter =0
 			
 			if self.jumping == False and self.falling == False: #if not jumping or falling, 
 				self.dy = -8#slime jumps
@@ -63,19 +63,20 @@ class Slime:
 					self.dx = 4
 				else:
 					self.dx = -4			
-				
-			self.timer = 0
-			self.falling = True
+					
+				self.falling = True
+			
+		self.frame_index += self.animation_speed
+		if self.frame_index >= len(self.animation):
+			self.frame_index = 0
 			
 		self.rect.x += self.dx #collisions for movement on x axis
 		collisions = collision_test(self.rect,tile_rects)
 		for tile in collisions: 
 			if self.dx > 0:
 				self.rect.right = tile.left
-
 			if self.dx < 0:
-				 self.rect.left = tile.right
-		
+				 self.rect.left = tile.right		
 		self.rect.y += self.dy #collisions for movemnt on y axis
 		collisions = collision_test(self.rect,tile_rects)
 		for tile in collisions:
@@ -96,9 +97,7 @@ class Slime:
 			self.dy = 9			
 		
 	def draw(self,screen,scroll):
-		if self.counter + 1 >= 22:
-			self.counter = 0
-		screen.blit(self.idle[self.counter // 12],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
+		screen.blit(self.animation[int(self.frame_index)],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
 		pygame.draw.rect(screen,(255,255,255),self.rect.move(scroll[0]*-1,scroll[1]*-1),2)#hitbox for debugging
 		
 	def do(self,screen,scroll,tile_rects,player):
@@ -112,14 +111,10 @@ class Player:
 	
 	def __init__(self,x,y,size_x,size_y):
 		self.index = 0
-		self.x = x
-		self.y = y
+		self.rect = pygame.Rect(x,y,size_x,size_y)
+		self.vely = 0.6
 		self.dx = 0
 		self.dy = 0
-		self.size_x = size_x
-		self.size_y = size_y
-		self.rect = pygame.Rect(self.x,self.y,self.size_x,self.size_y)
-		self.vely = 0 
 		self.animation_speed = 0.15
 		self.frame_index = 0
 		self.direction = 1
@@ -189,8 +184,7 @@ class Player:
 				self.rect.top = tile.bottom
 				self.dy= 0			
 		
-		self.vely = 0.6  #gravity
-		self.dy += self.vely				
+		self.dy += self.vely#gravity				
 		if self.dy > 11:
 			self.dy = 11
 			
@@ -239,7 +233,7 @@ class StabWeapon:
 		self.frame_index += self.animation_speed #handles how many frames a given image should show for
 		if self.frame_index >= len(self.animation):
 			self.frame_index = 0
-			self.visible = False
+			#self.visible = False
 		
 		self.rect =self.animation[0].get_rect(topleft=(self.player.rect.center[0]-scroll[0]-65,self.player.rect.center[1]-scroll[1])) #updates the spear's rect's location
 		if self.rect.colliderect(slime.rect):

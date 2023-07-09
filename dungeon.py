@@ -33,6 +33,8 @@ running = True #game loop
 while running:
 	clock.tick(FPS) #limits how often this loop can run
 	screen.fill((140,209,255)) #background color		
+	mob_rects = []
+	mob_rects.append(slime.rect)
 	
 	scroll[0] += (player.rect.x-scroll[0]-500)/10 #makes the camera follows the player on x-axis
 	scroll[1] += (player.rect.y-scroll[1]-300)/10 #makes the camera follows the player on y-axis
@@ -44,61 +46,15 @@ while running:
 	slime.do(screen,scroll,tile_rects,player) #updates and draws slime
 	stab_weapon.do(screen,scroll,player,slime) #updates and draws stab_weapon
 	
-	player_gui.update(screen) #updates and draws hitpoints bar, player's hotbar, and inventory
+	player_gui.update(screen,main_menu,mouse_pos,stab_weapon) #updates and draws hitpoints bar, player's hotbar, and inventory
 	main_menu.do(screen,HEIGHT/5)#updates and draws pause menu. Will also handle main menu.
 	
-	if stab_weapon.rect.colliderect(slime.rect):
-		print('stabbed')
+	for rects in mob_rects:
+		if stab_weapon.rect.colliderect(rects):
+			print('stabbed')
 		
-	if player.rect.colliderect(slime.rect):
-		print('hit')
+	# if player.rect.colliderect(slime.rect):
+		# print('hit')	
+	pygame.display.update()
 
-	for event in pygame.event.get():	
-		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_e: #toggles inventory view
-				player_gui.show_inventory = not player_gui.show_inventory
-				
-			if event.key== pygame.K_ESCAPE and main_menu.type == None:#toggles menu
-				main_menu.type = 'pause'
-			elif event.key == pygame.K_ESCAPE and main_menu.type == 'pause':
-				main_menu.type = None
-			
-		if event.type == pygame.MOUSEBUTTONDOWN:	
-			if event.button == 5: #detects scrolling up
-				if player_gui.hotbar_index < 4:
-					player_gui.hotbar[player_gui.hotbar_index] = False 
-					player_gui.hotbar_index += 1
-					player_gui.hotbar[player_gui.hotbar_index] = True
-				else:
-					player_gui.hotbar[player_gui.hotbar_index] = False
-					player_gui.hotbar_index = 1
-					player_gui.hotbar[player_gui.hotbar_index] = True
-					
-			elif event.button == 4: #detects scrolling down
-				if player_gui.hotbar_index > 1: 
-					player_gui.hotbar[player_gui.hotbar_index] = False
-					player_gui.hotbar_index -= 1
-					player_gui.hotbar[player_gui.hotbar_index] = True	
-				else:
-					player_gui.hotbar[player_gui.hotbar_index] = False
-					player_gui.hotbar_index = 4
-					player_gui.hotbar[player_gui.hotbar_index] = True
-					
-			elif event.button == 1: #detects left click
-				if player_gui.show_inventory == True: #detects where in inventory the player is clicking.
-					for rects in player_gui.inv_rects:
-						if player_gui.inv_rects[rects].collidepoint(mouse_pos):
-							pass #interact with inventory						
-				stab_weapon.visible = True
-				
-				if main_menu.type == 'pause':
-					main_menu.button_function()
-					
-			elif event.button == 3:#for future right click functionality
-				pass
-				
-		if event.type == pygame.QUIT:
-			running = False 
-		
-	pygame.display.update()	
 pygame.quit()

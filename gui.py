@@ -1,4 +1,4 @@
-import pygame, os, pygame_gui
+import pygame, os, pygame_gui, sys
 class Menu: #need to add a save functionality and button. save and quit for example
 	menu_images = {'singleplayer':pygame.image.load(os.path.join('ui','singleplayerbutton.png')),
 				'multiplayer':pygame.image.load(os.path.join('ui','multiplayerbutton.png')),
@@ -91,9 +91,54 @@ class PlayerGui:
 						'd3':pygame.Rect(self.hotbar_x+128,self.hotbar_y-64,64,64),
 						'd4':pygame.Rect(self.hotbar_x+192,self.hotbar_y-64,64,64)}
 				
-	def update(self,screen):
+	def update(self,screen,main_menu,mouse_pos,stab_weapon):
 		k = pygame.key.get_pressed()
-			
+		
+		for event in pygame.event.get():	
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_e: #toggles inventory view
+					self.show_inventory = not self.show_inventory
+					
+				if event.key== pygame.K_ESCAPE and main_menu.type == None:#toggles menu
+					main_menu.type = 'pause'
+				elif event.key == pygame.K_ESCAPE and main_menu.type == 'pause':
+					main_menu.type = None
+				
+			if event.type == pygame.MOUSEBUTTONDOWN:	
+				if event.button == 5: #detects scrolling up
+					if self.hotbar_index < 4:
+						self.hotbar[self.hotbar_index] = False 
+						self.hotbar_index += 1
+						self.hotbar[self.hotbar_index] = True
+					else:
+						self.hotbar[self.hotbar_index] = False
+						self.hotbar_index = 1
+						self.hotbar[self.hotbar_index] = True
+						
+				elif event.button == 4: #detects scrolling down
+					if self.hotbar_index > 1: 
+						self.hotbar[self.hotbar_index] = False
+						self.hotbar_index -= 1
+						self.hotbar[self.hotbar_index] = True	
+					else:
+						self.hotbar[self.hotbar_index] = False
+						self.hotbar_index = 4
+						self.hotbar[self.hotbar_index] = True
+				elif event.button == 1: #detects left click
+					if self.show_inventory == True: #detects where in inventory the player is clicking.
+						for rects in self.inv_rects:
+							if self.inv_rects[rects].collidepoint(mouse_pos):
+								pass #interact with inventory						
+					stab_weapon.visible = True				
+					if main_menu.type == 'pause':
+						main_menu.button_function()
+						
+				elif event.button == 3:#for future right click functionality
+					pass
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				sys.exit()
+		
 		if k[pygame.K_1]:
 			self.hotbar_index = 1
 		
