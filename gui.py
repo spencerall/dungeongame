@@ -10,48 +10,107 @@ class Menu: #need to add a save functionality and button. save and quit for exam
 	for key in menu_images:
 		menu_images[key] = pygame.transform.scale(menu_images[key],(600,100))
 		menu_images[key].set_colorkey((255,255,255))
-	 	
-	def __init__(self,x,y):
-		self.x = x
-		self.y = y			
+
+	def __init__(self,width,height):
+		self.x = width
+		self.y = height			
 		self.main_menu_keys = ['singleplayer','multiplayer','settings','quit']
 		self.pause_menu_keys = ['mainmenu','settings','quit']
 		self.type = None
-		
-	def button_function(self):
-		button_rects = []
+		self.button_rects = []
+		self.buttonqty = 1
+		self.clicked = False		
+
+			
+	def rect_distributor(self,screen):
+		if self.type == 'pause':
+			for key in self.pause_menu_keys: #creates and stores all the rects of the buttons in a list
+				rects = pygame.Surface.get_rect(self.menu_images[key])
+				self.button_rects.append(rects)
+
+		elif self.type == 'main':
+			for key in self.main_menu_keys: #creates and stores all the rects of the buttons in a list
+				rects = pygame.Surface.get_rect(self.menu_images[key])
+				self.button_rects.append(rects)
+				
+			
+			spacer = 50			
+			for rect in self.button_rects:
+				rect.center = ((self.x/2),(self.y+spacer))
+				spacer += 150
+				pygame.draw.rect(screen,(255,255,255),rect,2) #debugging box for menu rects
+
+	def button_manager(self):		
 		buttons_pressed = {'mainmenu':False,
 						'settings':False,
 						'quit':False,
 						'singleplayer':False,
 						'multiplayer':False}						
 		pos = pygame.mouse.get_pos()
-		
-		for key in self.pause_menu_keys:
-			rects = pygame.Surface.get_rect(self.menu_images[key])
-			button_rects.append(rects)
 
 		if self.type == 'pause':
-			for rects in button_rects:
-				if rects.collidepoint(pos):
-					print(buttons_pressed[rects])
-						
-	def draw(self,screen,y):	
+			self.buttonqty = len(self.pause_menu_keys) + 2	#determines vertical distribution of buttons
+			
+			for rect in self.button_rects:
+				if rect.collidepoint(pos) and self.clicked:
+					rect_index = self.button_rects.index(rect) #detects which rect on the menu is clicked					
+					if rect_index == 0: 
+						buttons_pressed['main_menu'] = True
+					elif rect_index == 1:
+						buttons_pressed['settings'] = True
+					elif rect_index == 2:
+						buttons_pressed['quit'] = True
+					
+			self.button_rects = [] #wipes button rects for future loops
+			
+		if self.type == 'main':
+			self.buttonqty = len(self.main_menu_keys) + 2 #determines vertical distribution of buttons
+			
+			for rect in self.button_rects:
+				if rect.collidepoint(pos) and self.clicked:
+					rect_index = self.button_rects.index(rect) #detects which rect on the menu is clicked					
+					if rect_index == 0: 
+						buttons_pressed['singleplayer'] = True
+					elif rect_index == 1:
+						buttons_pressed['multiplayer'] = True
+					elif rect_index == 2:
+						buttons_pressed['settings'] = True
+					elif rect_index == 3:
+						buttons_pressed['quit'] = True
+			
+		self.y = self.y/self.buttonqty #sets height for the first button 		
+		self.clicked = False #resets self.clicked every loop so that it doesn't stay true after clicking
+		
+		if buttons_pressed['mainmenu'] == True: #This block of code handles the functions of all the buttons
+			pass
+		if buttons_pressed['settings'] == True:
+			pass
+		if buttons_pressed['quit'] == True:
+			pygame.quit()
+			sys.exit()
+		if buttons_pressed['singleplayer'] == True:
+			pass
+		if buttons_pressed['multiplayer'] == True:
+			pass
+				
+	def draw(self,screen,height):
+	
 		if self.type == 'main':
 			for key in self.main_menu_keys:		
-				screen.blit(self.menu_images[key],(self.x,self.y))
+				screen.blit(self.menu_images[key],((self.x-600)/2,self.y))
 				self.y += 150
-			self.y = y
+			self.y = height
 			
 		if self.type == 'pause':
-			for key in self.pause_menu_keys:		
-				screen.blit(self.menu_images[key],(self.x,self.y))
+			for key in self.pause_menu_keys:
+				screen.blit(self.menu_images[key],((self.x-600)/2,self.y))
 				self.y += 150
-			self.y = y
+			self.y = height
 			
-	def do(self,screen,y):
-		self.button_function()
-		self.draw(screen,y)
+	def do(self,screen,height):
+		self.button_manager()
+		self.rect_distributor(screen)
+		self.draw(screen,height)
 		
 class PlayerGui:
 	ui_images = [pygame.image.load(os.path.join('ui','emptyheart.png')),
@@ -91,7 +150,7 @@ class PlayerGui:
 						'd3':pygame.Rect(self.hotbar_x+128,self.hotbar_y-64,64,64),
 						'd4':pygame.Rect(self.hotbar_x+192,self.hotbar_y-64,64,64)}
 				
-	def update(self,screen,main_menu,mouse_pos,stab_weapon):
+	def update(self,screen,main_menu_inst,mouse_pos):
 		k = pygame.key.get_pressed()
 		
 		for event in pygame.event.get():	
@@ -99,11 +158,11 @@ class PlayerGui:
 				if event.key == pygame.K_e: #toggles inventory view
 					self.show_inventory = not self.show_inventory
 					
-				if event.key== pygame.K_ESCAPE and main_menu.type == None:#toggles menu
-					main_menu.type = 'pause'
-				elif event.key == pygame.K_ESCAPE and main_menu.type == 'pause':
-					main_menu.type = None
-				
+				if event.key== pygame.K_ESCAPE and main_menu_inst.type == None:#toggles menu
+					main_menu_inst.type = 'pause'
+				elif event.key == pygame.K_ESCAPE and main_menu_inst.type == 'pause':
+					main_menu_inst.type = None
+					
 			if event.type == pygame.MOUSEBUTTONDOWN:	
 				if event.button == 5: #detects scrolling up
 					if self.hotbar_index < 4:
@@ -124,14 +183,15 @@ class PlayerGui:
 						self.hotbar[self.hotbar_index] = False
 						self.hotbar_index = 4
 						self.hotbar[self.hotbar_index] = True
+						
 				elif event.button == 1: #detects left click
 					if self.show_inventory == True: #detects where in inventory the player is clicking.
 						for rects in self.inv_rects:
 							if self.inv_rects[rects].collidepoint(mouse_pos):
 								pass #interact with inventory						
-					stab_weapon.visible = True				
-					if main_menu.type == 'pause':
-						main_menu.button_function()
+					
+					if main_menu_inst.type == 'pause':
+						main_menu_inst.clicked = True
 						
 				elif event.button == 3:#for future right click functionality
 					pass
@@ -169,28 +229,3 @@ class PlayerGui:
 				
 		if self.show_inventory == True:#Displays player's inventory
 			screen.blit(self.ui_images[4],(self.hotbar_x,self.hotbar_y-256))
-
-# class Button():
-	# def __init__(self,x,y,image,scale):
-		# width = image.get_width()
-		# height = image.get_height()
-		# self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
-		# self.rect = self.image.get_rect()
-		# self.rect.topLeft = (x,y)
-		# self.clicked = False
-		
-	# def draw(self,surface):
-		# action = False
-		# pos = pygame.mouse.get_pos()
-		
-		# if self.rect.collidepoint(pos):
-			# if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
-			# self.clicked = True
-			# action = True
-			
-		# if pygame.mouse.get_pressed()[0] == 0:
-			# self.clicked = False
-		
-		# surface.blit(self.image, (self.rect.x,self.rect.y))
-		
-		# return action

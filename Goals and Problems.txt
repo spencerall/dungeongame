@@ -1,0 +1,9 @@
+Sound Effects Needed:
+player jump
+slime impact
+stab
+slash
+button pressed
+coin tink
+item combination
+item select
