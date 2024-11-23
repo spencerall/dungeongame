@@ -120,7 +120,7 @@ class Player:
 		self.frame_index = 0
 		self.direction = 1
 		self.max_hitpoints = 10
-		self.hitpoints = 10
+		self.hitpoints = 3
 		self.dmg_detect_timer = 0
 		self.regeneration_timer = 0
 		self.jumping = False
@@ -129,7 +129,7 @@ class Player:
 		self.frame_index = 0
 		self.damaged = False
 		
-	def update(self,player_gui,tile_rects,slime):
+	def update(self,tile_rects,slime,player_gui,menu_manager):
 		self.damaged = False
 		self.dmg_detect_timer += 1
 		self.regeneration_timer += 1
@@ -137,7 +137,7 @@ class Player:
 		k = pygame.key.get_pressed() #input for movement
 		m = pygame.mouse.get_pressed(num_buttons=3)
 		
-		if k[pygame.K_SPACE] and not self.jumping and not m[0]:
+		if k[pygame.K_SPACE] and not m[0]: #and not self.jumping:
 			self.dy = -15
 			self.jumping = True
 
@@ -175,10 +175,11 @@ class Player:
 				self.animation = self.idle_left
 				
 		if m[0] == True:
-			if self.direction == 1:
-				self.animation = self.stab_right
-			else:
-				self.animation = self.stab_left
+			pass
+			# if self.direction == 1:
+				# self.animation = self.stab_right
+			# else:
+				# self.animation = self.stab_left
 				
 		self.frame_index += self.animation_speed
 		if self.frame_index >= len(self.animation):
@@ -223,55 +224,14 @@ class Player:
 				#pygame.mixer.Sound.play(self.player_dmg_sound)
 				player_gui.hitpoints[self.hitpoints+1] = False
 		
+		if player_gui.hitpoints[1] == False:
+			menu_manager.set_current_menu('GameOver')
+		
 	def draw(self,screen,scroll):	
 		screen.blit(self.animation[int(self.frame_index)],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
 		hitbox = pygame.draw.rect(screen,(255,255,255),self.rect.move(scroll[0]*-1,scroll[1]*-1),2) #hitbox for debugging
 		
-	def do(self,screen,scroll,player_gui,tile_rects,slime):
-		self.update(player_gui,tile_rects,slime) 
+	def do(self,screen,scroll,tile_rects,slime,player_gui,menu_manager):
+		self.update(tile_rects,slime,player_gui,menu_manager) 
 		self.draw(screen,scroll)
 
-# class StabWeapon:
-	# stab_right,stab_left = animation_loader('spear','stab',1,(130,25)) #loads image to be used in animation
-	# stab_right[0].set_colorkey((255,255,255))
-	# stab_left[0].set_colorkey((255,255,255))
-	
-	# def __init__(self,player,scroll):
-		# self.player = player
-		# self.type = 'wooden'
-		# self.direction = player.direction
-		# self.animation = self.stab_right[0]
-		# self.frame_index = 0
-		# self.animation_speed = 0.05
-		# self.rect =self.animation.get_rect(topleft=(self.player.rect.center[0]-scroll[0]-65,self.player.rect.center[1]-scroll[1]))
-		# self.dmg = 2
-		# self.visible = False
-		
-	# def update(self,player,scroll,mob_rects):
-		# self.direction = player.direction
-		# self.animation = self.stab_right if self.direction == 1 else self.stab_left #chooses whether the image should be facing left or right
-		
-		# self.frame_index += self.animation_speed #handles how many frames a given image should show for
-		# if self.frame_index >= len(self.animation):
-			# self.frame_index = 0
-			# self.visible = False
-		
-		# self.rect =self.animation[0].get_rect(topleft=(self.player.rect.center[0]-scroll[0]-65,self.player.rect.center[1]-scroll[1])) #updates the spear's rect's location
-		
-		# #print(self.rect)
-		# #print(mob_rects[0])
-		# for rects in mob_rects:
-			# if self.rect.colliderect(rects):
-				# print(rects)
-				# print(self.rect)
-			# else:
-				# pass
-
-	# def draw(self,screen,scroll): #places image on screen relative to player's position
-		# if self.visible:
-			# screen.blit(self.animation[int(self.frame_index)],(self.player.rect.center[0]-scroll[0]-65,self.player.rect.center[1]-scroll[1])) 
-			# pygame.draw.rect(screen,(255,255,255),self.rect,2) #hitbox for debugging
-			
-	# def do(self,screen,scroll,player,slime): #updates and draws the spear in one command
-		# self.update(player,scroll,slime)
-		# self.draw(screen,scroll)
