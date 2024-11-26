@@ -10,22 +10,18 @@ class PlayerGui:
 		self.hitpoints = {1:True,2:True,3:True,4:True,5:True,6:True,7:True,8:True,9:True,10:True}
 		self.hotbar = {1:True,2:False,3:False,4:False}
 		self.hotbar_index = 1
-		self.inv_rects = {'a1':pygame.Rect(self.hotbar_x,self.hotbar_y-256,64,64),
-						'a2':pygame.Rect(self.hotbar_x+64,self.hotbar_y-256,64,64),
-						'a3':pygame.Rect(self.hotbar_x+128,self.hotbar_y-256,64,64),
-						'a4':pygame.Rect(self.hotbar_x+192,self.hotbar_y-256,64,64),
-						'b1':pygame.Rect(self.hotbar_x,self.hotbar_y-192,64,64),
-						'b2':pygame.Rect(self.hotbar_x+64,self.hotbar_y-192,64,64),
-						'b3':pygame.Rect(self.hotbar_x+128,self.hotbar_y-192,64,64),
-						'b4':pygame.Rect(self.hotbar_x+192,self.hotbar_y-192,64,64),
-						'c1':pygame.Rect(self.hotbar_x,self.hotbar_y-128,64,64),
-						'c2':pygame.Rect(self.hotbar_x+64,self.hotbar_y-128,64,64),
-						'c3':pygame.Rect(self.hotbar_x+128,self.hotbar_y-128,64,64),
-						'c4':pygame.Rect(self.hotbar_x+192,self.hotbar_y-128,64,64),
-						'd1':pygame.Rect(self.hotbar_x,self.hotbar_y-64,64,64),
-						'd2':pygame.Rect(self.hotbar_x+64,self.hotbar_y-64,64,64),
-						'd3':pygame.Rect(self.hotbar_x+128,self.hotbar_y-64,64,64),
-						'd4':pygame.Rect(self.hotbar_x+192,self.hotbar_y-64,64,64)}
+		self.holding = [None,0] 
+		
+		rows = ['a', 'b', 'c', 'd', 'e']	#Generates a dictionary organized like this:
+		cols = [1, 2, 3, 4]					#self.inv_rects = {cell_name:(rect,[contents,quantity])}
+		self.inv_cells = {}					#for example, self.inv_rects = {a1:(pygame.Rect(x,y,64,64),['wood',10])}											#a-e and 1,4 (20 different key/value pairs)
+		for row in rows:					
+			for col in cols:
+				key = f'{row}{col}'
+				rect_x = self.hotbar_x + (col - 1) * 64
+				rect_y = self.hotbar_y - (256 - (rows.index(row) * 64))
+				self.inv_cells[key] = [pygame.Rect(rect_x, rect_y, 64, 64), [None, 0]]				
+		
 		self.ui_images = [pygame.image.load(os.path.join('ui','emptyheart.png')),
 				pygame.image.load(os.path.join('ui','heart.png')),
 				pygame.image.load(os.path.join('ui','invborder.png')).convert_alpha(),
@@ -42,20 +38,33 @@ class PlayerGui:
 		k = pygame.key.get_pressed()
 				
 		if k[pygame.K_1]:
-			self.hotbar_index = 1
-		
+			self.hotbar_index = 1		
 		elif k[pygame.K_2]:
-			self.hotbar_index = 2
-			
+			self.hotbar_index = 2			
 		elif k[pygame.K_3]:
-			self.hotbar_index = 3
-			
+			self.hotbar_index = 3			
 		elif k[pygame.K_4]:
-			self.hotbar_index = 4		
+			self.hotbar_index = 4
 	
+	def display_icons(self,screen):
+		for cell in self.inv_cells:																				#loop through inventory cells
+			if self.inv_cells[cell][1][0] is not None:																#if there's something in it
+				img = pygame.image.load(os.path.join('ui','invicons',f'inv_{self.inv_cells[cell][1][0]}.png'))	#load image for what's in there
+				# img = pygame.transform.scale(img,(32,32))
+				# img = img.set_colorkey((255,255,255))
+				img_rect = img.get_rect()																#get a rect for the purposes of positioning
+				img_rect.center = self.inv_cells[cell][0].center													#center the image's rect in the center of the cell
+				
+				font = pygame.font.Font(None,16)										#load the font
+				qty = font.render(str(self.inv_cells[cell][1][1]),True,(0,0,0))						#write quantity in that font
+					
+				screen.blit(img,(img_rect.centerx,img_rect.centery))					#draw the icon in the middle of the appropriate cell
+				screen.blit(qty,(img_rect.centerx+10,img_rect.centery+10))				#draw the quantity relative to the icon
+				
 	def draw(self,screen):
 		if self.show_inventory == True:#Displays player's inventory
 			screen.blit(self.ui_images[4],(self.hotbar_x,self.hotbar_y-256))
+			
 		for i in range(10): 
 			if self.hitpoints[i+1] == True: #checks to see if the player has this heart and then blits a full heart if true
 				screen.blit(self.ui_images[1],(self.health_x,25))				
@@ -74,7 +83,8 @@ class PlayerGui:
 	
 	def do(self,screen):
 		self.update(screen)
-		self.draw(screen)
+		self.display_icons(screen)
+		self.draw(screen)	
 			
 class MenuManager:
 	def __init__(self,screen,width,height,menus_info_dict):

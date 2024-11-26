@@ -4,6 +4,8 @@ game_folder = os.path.dirname(__file__)
 soundfx_folder = os.path.join(game_folder,'audio','soundfx')
 player_animations = os.path.join(game_folder,'playeranimations')
 
+
+
 def collision_test(rect,tiles):
     collisions = []
     for tile in tiles:
@@ -50,58 +52,61 @@ class Slime:
 		self.animation_speed = 0.08
 		self.frame_index = 0
 		self.counter = 0
-	def update(self,tile_rects,player):		
+	def update(self,tile_rects,player,scroll):
+	
+		screen_rect = pygame.Rect(scroll[0],scroll[1],1080,720)
+		if screen_rect.colliderect(self.rect):
 		
-		self.counter += 1
-		if self.counter > 80:
-			self.counter =0
-			
-			if self.jumping == False and self.falling == False: #if not jumping or falling, 
-				self.dy = -8#slime jumps
+			self.counter += 1
+			if self.counter > 80:
+				self.counter =0
+				
+				if self.jumping == False and self.falling == False: #if not jumping or falling, 
+					self.dy = -8#slime jumps
 
-				if (player.rect.x - self.rect.x) > 0:  #checks to see where the player is and has it move towards the player
-					self.dx = 4
-				else:
-					self.dx = -4			
-					
-				self.falling = True
+					if (player.rect.x - self.rect.x) > 0:  #checks to see where the player is and has it move towards the player
+						self.dx = 4
+					else:
+						self.dx = -4			
+						
+					self.falling = True
+				
+			self.frame_index += self.animation_speed
+			if self.frame_index >= len(self.animation):
+				self.frame_index = 0
+				
+			self.rect.x += self.dx #collisions for movement on x axis
+			collisions = collision_test(self.rect,tile_rects)
+			for tile in collisions: 
+				if self.dx > 0:
+					self.rect.right = tile.left
+				if self.dx < 0:
+					 self.rect.left = tile.right		
+			self.rect.y += self.dy #collisions for movemnt on y axis
+			collisions = collision_test(self.rect,tile_rects)
+			for tile in collisions:
+				if self.dy > 0:
+					self.rect.bottom  = tile.top
+					self.vely = 0
+					self.falling = False
+					self.jumping = False
+					self.dx = 0				
+				if self.dy <= 0:
+					self.rect.top = tile.bottom
+					self.dy= 0
+					self.falling = True
 			
-		self.frame_index += self.animation_speed
-		if self.frame_index >= len(self.animation):
-			self.frame_index = 0
-			
-		self.rect.x += self.dx #collisions for movement on x axis
-		collisions = collision_test(self.rect,tile_rects)
-		for tile in collisions: 
-			if self.dx > 0:
-				self.rect.right = tile.left
-			if self.dx < 0:
-				 self.rect.left = tile.right		
-		self.rect.y += self.dy #collisions for movemnt on y axis
-		collisions = collision_test(self.rect,tile_rects)
-		for tile in collisions:
-			if self.dy > 0:
-				self.rect.bottom  = tile.top
-				self.vely = 0
-				self.falling = False
-				self.jumping = False
-				self.dx = 0				
-			if self.dy <= 0:
-				self.rect.top = tile.bottom
-				self.dy= 0
-				self.falling = True
-		
-		self.vely = 0.6  #gravity
-		self.dy += self.vely				
-		if self.dy > 9:
-			self.dy = 9			
+			self.vely = 0.6  #gravity
+			self.dy += self.vely				
+			if self.dy > 9:
+				self.dy = 9			
 		
 	def draw(self,screen,scroll):
 		screen.blit(self.animation[int(self.frame_index)],(self.rect.x-scroll[0],self.rect.y-scroll[1]))
 		pygame.draw.rect(screen,(255,255,255),self.rect.move(scroll[0]*-1,scroll[1]*-1),2)#hitbox for debugging
 		
 	def do(self,screen,scroll,tile_rects,player):
-		self.update(tile_rects,player)
+		self.update(tile_rects,player,scroll)
 		self.draw(screen,scroll)
 
 class Player:
@@ -120,7 +125,7 @@ class Player:
 		self.frame_index = 0
 		self.direction = 1
 		self.max_hitpoints = 10
-		self.hitpoints = 3
+		self.hitpoints = 10
 		self.dmg_detect_timer = 0
 		self.regeneration_timer = 0
 		self.jumping = False
@@ -137,7 +142,7 @@ class Player:
 		k = pygame.key.get_pressed() #input for movement
 		m = pygame.mouse.get_pressed(num_buttons=3)
 		
-		if k[pygame.K_SPACE] and not m[0]: #and not self.jumping:
+		if k[pygame.K_SPACE] and not self.jumping:
 			self.dy = -15
 			self.jumping = True
 

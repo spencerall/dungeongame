@@ -1,85 +1,63 @@
-import pygame,os,random
+import pygame,os,random,noise,time
 from PIL import Image
 
+random.seed(random.randint(0,10000))
+
 tile_size = 48
+chunk_size = 8
 
 game_folder = os.path.dirname(__file__)#paths
-tile_img_folder = os.path.join(game_folder, 'tiles')
+tile_img_folder = os.path.join(game_folder,'tiles')
+environment_folder = os.path.join(game_folder,'environment')
 
-class LoadTiles:
-	def __init__(self,imageName):
-		tile_rects = []
-		self.imgLoad = pygame.image.load(os.path.join(tile_img_folder, imageName)) #.convert()
-		self.imgScale = pygame.transform.scale(self.imgLoad, (tile_size, tile_size))
+seed_offset = random.uniform(0,10000)
 
-dirt_tile = LoadTiles('dirt_tile.png') #loads images
-grass_tile = LoadTiles('grass_tile.png') 
-rock_tile = LoadTiles('rock_tile.png')
-		
-class LevelModules:
-	def __init__(self,biome,level_length):
-		self.biome = biome
-		self.module_index = 0
-		self.module_img = 0
-		self.module_qty = 4
-		self.module_image_list = []
-		self.level_length = level_length
-		self.level_construct = []	
-		self.level_image = None
-		
-	def level_constructor(self):
-		for i in range(self.module_qty): #check how many modules there should be, open the images, and append them to a list
-			self.module_img = Image.open(os.path.join(game_folder,'levelmodules','biome'+str(self.biome),'biome'+str(self.biome)+"-module"+str(i)+'.png'))
-			self.module_img = self.module_img.convert('RGB')
-			self.module_image_list.append(self.module_img)
-				
-		for i in range(self.level_length):
-			self.level_construct.append(self.module_image_list[random.randint(1,self.module_qty-1)])
-		#self.level_construct.append(self.module_image_list[0]) #End level with a solid chunk
-		
-		level_width = sum(module.width for module in self.level_construct)
-		level_height = max(module.height for module in self.level_construct)
-		
-		self.level_image = Image.new('RGB', (level_width, level_height))
-		
-		module_offset = 0
-		for module in self.level_construct:
-			self.level_image.paste(module, (module_offset, 0))
-			module_offset += module.width
-		
-		self.level_image.save('level_image.png')
-		
-	def construct_interpreter(self,screen,scroll):
-		tile_rects = []
+def load_tiles(path,image_name,colorkey):
+	loaded_image = pygame.image.load(os.path.join(path, image_name))	
+	scaled_image = pygame.transform.scale(loaded_image, (tile_size, tile_size))
+	if colorkey:
+		scaled_image.set_colorkey((255,255,255))
 
-		width,height = self.level_image.size		
-
-		for x in range(width):
-			for y in range(height):
-				r,g,b = self.level_image.getpixel((x,y))
-				pixel = (r,g,b)
-				if pixel == (125,124,124): #rock
-					screen.blit(rock_tile.imgScale, ( x * tile_size - scroll[0], y * tile_size - scroll[1]))
-				elif pixel == (106,190,48): #grass
-					screen.blit(grass_tile.imgScale, ( x * tile_size - scroll[0], y * tile_size - scroll[1]))
-				elif pixel == (143,86,59): #dirt
-					screen.blit(dirt_tile.imgScale, ( x * tile_size - scroll[0], y * tile_size - scroll[1]))
-				if pixel != (182,171,171): #anything but air					
-					tile_rects.append(pygame.Rect(x * tile_size, y * tile_size, tile_size, tile_size))
-		
-		return tile_rects 
+	return scaled_image
 	
-	def spawn_player_in_center(self, player):
-    # Get the width and height of the level image (constructed map)
-		level_width, level_height = self.level_image.size
+dirt_tile = load_tiles(tile_img_folder,'dirt_tile.png',False) #loads images
+grass_tile = load_tiles(tile_img_folder,'grass_tile.png',False) 
+rock_tile = load_tiles(tile_img_folder,'rock_tile.png',False)
+rock_0 = load_tiles(environment_folder,'rock_0.png',True)
+rock_1 = load_tiles(environment_folder,'rock_1.png',True)
+rock_2 = load_tiles(environment_folder,'rock_2.png',True)
+rock_3 = load_tiles(environment_folder,'rock_3.png',True)
 
-    # Calculate the center of the level, accounting for player's size
-		spawn_x = (level_width - player.rect.width) // 2
-		spawn_y = (level_height - player.rect.height) // 2
 
-    # Set the player's position to the center of the level
-		player.rect.x = spawn_x
-		player.rect.y = spawn_y
+tile_index = {1:grass_tile,
+				2:dirt_tile,
+				3:rock_tile,
+				4:rock_0,
+				5:rock_1,
+				6:rock_2,
+				7:rock_3,}
+		
+def generate_chunk (x,y):
+	chunk_data = []
+	for y_pos in range (chunk_size):
+		for x_pos in range (chunk_size):
+			target_x = (x * chunk_size + x_pos)
+			target_y = (y * chunk_size + y_pos)
+			tile_type = 0 #nothing
+			height = int(noise.pnoise1((target_x + seed_offset)* 0.08,repeat = 9) * 5)
+			if target_y > 8 - height+2:
+				tile_type = 3 #dirt
+			elif target_y == 8 - height:
+				tile_type = 1 #grass
+			elif target_y in range((8-height),(8-height+3)):
+				tile_type = 2
+			elif target_y == 8 - height - 1: #random rock scenery
+				if random.randint(1,5) == 1:
+					tile_type = random.randint(4,7)
+			if tile_type != 0:
+				chunk_data.append([[target_x,target_y],tile_type])
+	return chunk_data
+		
 # class Backgrounds:
 	# def __init__(self):	
 		
